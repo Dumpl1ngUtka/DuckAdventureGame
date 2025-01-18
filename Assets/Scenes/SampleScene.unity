@@ -400,7 +400,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.378727, y: -1.28, z: -1.3573917}
-  m_LocalScale: {x: -38.72, y: 1, z: 8.78}
+  m_LocalScale: {x: 38, y: 1, z: 8.78}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -418,6 +418,7 @@ GameObject:
   - component: {fileID: 799538449}
   - component: {fileID: 799538454}
   - component: {fileID: 799538453}
+  - component: {fileID: 799538456}
   m_Layer: 0
   m_Name: Duck
   m_TagString: Untagged
@@ -508,7 +509,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 799538448}
   serializedVersion: 4
-  m_Mass: 1
+  m_Mass: 10
   m_Drag: 0
   m_AngularDrag: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -525,8 +526,28 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 112
+  m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &799538456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 799538448}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aca40f784beabea47b2da61e0570e1c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _distanceToFloor: 1
+  _groundLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  _springStrength: 2000
+  _springDamper: 100
+  _rotationSpringStrength: 2000
+  _rotationSpringDamper: 100
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
