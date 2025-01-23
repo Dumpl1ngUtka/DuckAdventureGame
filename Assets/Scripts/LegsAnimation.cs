@@ -9,110 +9,112 @@ namespace Duck
     {
         [SerializeField] private Transform _leftLeg;
         [SerializeField] private Transform _rightLeg;
-        [SerializeField] private float _stepDistance;
-        [SerializeField] private float _stepHeight;
-        [SerializeField] private float _maxDistanceToGround = 1;
+        [SerializeField] private float _stepDistance = 0.5f;
+        [SerializeField] private float _stepHeight = 0.2f;
+        [SerializeField] private float _maxDistanceToGround = 1f;
         [SerializeField] private LayerMask _layerMask;
-        [SerializeField] private float _animationSpeed = 15;
+        [SerializeField] private float _animationSpeed = 5f;
         [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private float _legSpacing;
-        private Vector3 _leftLegPosition;
-        private Vector3 _rightLegPosition;
-        private Vector3 _goalLeftLegPosition;
-        private Vector3 _goalRightLegPosition;
-        private float _leftLegLerp = 1;
-        private float _rightLegLerp = 1;
-        private float _leftLegRayOffset;
-        private float _rightLegRayOffset;
-        private bool _feetOnTheGround => (_leftLegLerp >= 1f && _rightLegLerp >= 1f);
+        [SerializeField] private float _legSpacing = 0.5f;
+        [SerializeField] private float _groundCheckDistance = 1.5f;
+        [SerializeField] private float _animationSpeedMultiplier = 1f;
+
+        private Vector3 _leftLegStartPos;
+        private Vector3 _rightLegStartPos;
+        private Vector3 _leftLegGoalPos;
+        private Vector3 _rightLegGoalPos;
+        private float _leftLegLerp = 1f;
+        private float _rightLegLerp = 1f;
+        private bool _isLeftLegStep = true;
 
         private void Awake()
         {
-            _leftLegPosition = _leftLeg.position;
-            _rightLegPosition = _rightLeg.position;
-            //_leftLegPosition = GetLegPosition(_leftLeg, _leftLegTarget);
-            //_rightLegPosition = GetLegPosition(_rightLeg, _rightLegTarget);
+            _leftLegStartPos = _leftLeg.position;
+            _rightLegStartPos = _rightLeg.position;
+            _leftLegGoalPos = _leftLegStartPos;
+            _rightLegGoalPos = _rightLegStartPos;
         }
 
         private void Update()
         {
-            //Debug.Log(_leftLeg.localPosition + " : " + _rightLeg.localPosition);//z
-            //SetRayOffset();
-            ////_leftLeg.position = _leftLegPosition;
+            var velocity = _rigidbody.velocity;
+            var moveDirection = velocity.normalized;
 
-            //if ((_leftLegPosition - _leftLeg.position).magnitude > 0.01f && _leftLegLerp >= 1f && _rightLegLerp >= 1f)
-            //{
-            //    _leftLegLerp = 0f;
-            //}
-            //if (_leftLegLerp < 1f)
-            //{
-            //    MoveLeg(_leftLeg, _leftLegPosition, _leftLegLerp);
-            //    _leftLegLerp += _animationSpeed * Time.deltaTime;
-            //}
-            //else
-            //{
-            //    _leftLegPosition = GetLegPositionL(_leftLeg);
-            //}
-
-            //if ((_rightLegPosition - _rightLeg.position).magnitude > 0.01f && _leftLegLerp >= 1f &&_rightLegLerp >= 1f )
-            //{
-            //    _rightLegLerp = 0f;
-            //}
-            //if (_rightLegLerp < 1f)
-            //{
-            //    MoveLeg(_rightLeg, _rightLegPosition, _rightLegLerp);
-            //    _rightLegLerp += _animationSpeed * Time.deltaTime;
-            //}
-            //else
-            //{
-            //    _rightLegPosition = GetLegPositionR(_rightLeg);
-            //}
-
-            if (true)
+            if (velocity.magnitude > 0.1f)
             {
-                var leftLegOffset = _leftLeg.localPosition.z;
-                var rightLegOffset = _rightLeg.localPosition.z;
+                _animationSpeedMultiplier = Mathf.Clamp(velocity.magnitude, 0.5f, 2f);
+                HandleLegMovement(moveDirection);
+            }
+            else
+            {
+                _leftLeg.position = _leftLegStartPos;
+                _rightLeg.position = _rightLegStartPos;
+            }
 
-                var moveDot = Vector3.Dot(transform.forward, _rigidbody.velocity);
-                var moveDotSign = Mathf.Sign(moveDot);
 
-                //UpdateAnimationSpeed(_rigidbody.velocity.magnitude);
+            Debug.DrawRay(_leftLeg.position, Vector3.down * _groundCheckDistance, Color.red);
+            Debug.DrawRay(_rightLeg.position, Vector3.down * _groundCheckDistance, Color.red);
+            Debug.DrawRay(transform.position, moveDirection * _stepDistance, Color.green);
+        }
 
-                bool isNeedToStep = (moveDot >= 0 && leftLegOffset < 0 && rightLegOffset < 0) ||
-                                    (moveDot <= 0 && leftLegOffset > 0 && rightLegOffset > 0);
-
-                if (isNeedToStep)
+        private void HandleLegMovement(Vector3 moveDir)
+        {
+            switch (_isLeftLegStep)
+            {
+                case true when _leftLegLerp >= 1f:
                 {
-                    if (Mathf.Abs(leftLegOffset) > Mathf.Abs(rightLegOffset))
+                    if (IsGrounded(_leftLeg))
                     {
-                        _goalLeftLegPosition = transform.position + _stepDistance * moveDotSign * Vector3.forward + Vector3.left * 0.5f;
+                        _leftLegGoalPos = transform.position + (moveDir * _stepDistance) + Vector3.left * _legSpacing;
                         _leftLegLerp = 0f;
+                        _isLeftLegStep = false;
                     }
-                    else
+
+                    break;
+                }
+                case false when _rightLegLerp >= 1f:
+                {
+                    if (IsGrounded(_rightLeg))
                     {
-                        _goalRightLegPosition = transform.position + _stepDistance * moveDotSign * Vector3.forward - Vector3.left * 0.5f;
+                        _rightLegGoalPos = transform.position + (moveDir * _stepDistance) + Vector3.right * _legSpacing;
                         _rightLegLerp = 0f;
+                        _isLeftLegStep = true;
                     }
+
+                    break;
                 }
             }
-            //else
-            //{
-            //    if (_rightLegLerp < 1f)
-            //    {
-            //        _rightLegPosition = LegLerp(_rightLegPosition, _goalRightLegPosition, _rightLegLerp);
-            //        _rightLegLerp += _animationSpeed * Time.deltaTime;
-            //    }
 
-            //    if (_leftLegLerp < 1f)
-            //    {
-            //        _leftLegPosition = LegLerp(_leftLegPosition, _goalLeftLegPosition, _leftLegLerp);
-            //        _leftLegLerp += _animationSpeed * Time.deltaTime;
-            //    }
-            //}
+            if (_leftLegLerp < 1f)
+            {
+                _leftLegLerp += _animationSpeed * Time.deltaTime * _animationSpeedMultiplier;
+                var newPos = Vector3.Lerp(_leftLegStartPos, _leftLegGoalPos, Mathf.Sin(_leftLegLerp * Mathf.PI * 0.5f));
+                newPos.y += Mathf.Sin(_leftLegLerp * Mathf.PI) * _stepHeight;
+                _leftLeg.position = newPos;
+            }
+            else
+            {
+                _leftLegStartPos = _leftLegGoalPos;
+            }
 
-            _rightLeg.position = _goalLeftLegPosition;
-            _leftLeg.position = _goalRightLegPosition;
+            if (_rightLegLerp < 1f)
+            {
+                _rightLegLerp += _animationSpeed * Time.deltaTime * _animationSpeedMultiplier;
+                var newPos = Vector3.Lerp(_rightLegStartPos, _rightLegGoalPos,
+                    Mathf.Sin(_rightLegLerp * Mathf.PI * 0.5f));
+                newPos.y += Mathf.Sin(_rightLegLerp * Mathf.PI) * _stepHeight;
+                _rightLeg.position = newPos;
+            }
+            else
+            {
+                _rightLegStartPos = _rightLegGoalPos;
+            }
+        }
 
+        private bool IsGrounded(Transform leg)
+        {
+            RaycastHit hit;
+            return Physics.Raycast(leg.position, Vector3.down, out hit, _groundCheckDistance, _layerMask);
         }
 
         private Vector3 LegLerp(Vector3 oldPos, Vector3 newPos, float t)
@@ -121,7 +123,6 @@ namespace Duck
             var currentPos = Vector3.Lerp(oldPos, newPos, 0.4f);
             currentPos.y += Mathf.Sin(t * Mathf.PI) * _stepHeight;
             return currentPos;
-
         }
 
         private void CalculateLegPosition(Transform leg, Vector3 newPos, float lerp)
@@ -130,45 +131,11 @@ namespace Duck
             var currentPos = Vector3.Lerp(leg.position, newPos, lerp);
             currentPos.y += Mathf.Sin(lerp * Mathf.PI) * _stepHeight;
             leg.position = currentPos;
-
         }
 
         private void UpdateAnimationSpeed(float magnitude)
         {
             _animationSpeed = magnitude;
         }
-
-        //private void SetRayOffset()
-        //{
-        //    _leftLegRayOffset = _rigidbody.velocity.magnitude;
-        //    _rightLegRayOffset = -_rigidbody.velocity.magnitude;
-        //}
-
-        //private Vector3 GetLegPositionR(Transform leg)
-        //{
-        //    var target = transform.position + -transform.right * _legSpacing + transform.forward * _rightLegRayOffset;
-        //    Vector3 newLegPosition = target;
-        //    if (Physics.Raycast(target, Vector3.down, out var hit, _maxDistanceToGround, _layerMask))
-        //        newLegPosition = hit.point;
-
-        //    if ((leg.position - newLegPosition).magnitude > _stepDistance)
-        //        return newLegPosition;
-
-        //    return leg.position;
-        //}
-
-        //private Vector3 GetLegPositionL(Transform leg)
-        //{
-        //    var target = transform.position + transform.right * _legSpacing + transform.forward * _leftLegRayOffset;
-        //    Vector3 newLegPosition = target;
-        //    if (Physics.Raycast(target, Vector3.down, out var hit, _maxDistanceToGround, _layerMask))
-        //        newLegPosition = hit.point;
-
-        //    if ((leg.position - newLegPosition).magnitude > _stepDistance)
-        //        return newLegPosition;
-
-        //    return leg.position;
-        //}
     }
-
 }

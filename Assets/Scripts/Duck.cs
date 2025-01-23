@@ -7,7 +7,7 @@ namespace Duck
 {
     public class Duck : MonoBehaviour
     {
-        [SerializeField] private DuckMover _mover;
+        [SerializeField] private PhysicalMover _mover;
         [SerializeField] private PlayerController _input;
 
         private void OnEnable()

@@ -17,11 +17,10 @@ namespace Player
                 return;
             }
 
-            if (Physics.Raycast(ray, out RaycastHit hit, 100, _layerMask))
-            {
-                if (Input.GetMouseButton(0))
-                    LeftMouseButtonDown(hit);
-            }
+            if (!Physics.Raycast(ray, out var hit, 100, _layerMask)) return;
+            
+            if (Input.GetMouseButton(0))
+                LeftMouseButtonDown(hit);
         }   
 
         private void LeftMouseButtonDown(RaycastHit hit)

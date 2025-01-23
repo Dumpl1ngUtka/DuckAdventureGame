@@ -17,6 +17,7 @@ namespace Duck
         private float _rotationFraction = 0f;
         private float _speed = 0f;
         private float _currentMaxSpeed = 0f;
+        
         public float _acceleration = 1f;
         private bool _isNeedToMove => Direction != Vector3.zero;
         private bool _isNeedToRotate => _isNeedToMove || RotationDirection != Vector3.zero;
@@ -97,7 +98,6 @@ namespace Duck
         private void Rotate()
         {
             var delta = Vector3.SignedAngle(transform.forward, Direction, Vector3.up);
-            Debug.Log(delta);
             _rotationFraction = Mathf.Abs(delta) / 180;
             var newPivotRotation = transform.rotation.eulerAngles + new Vector3(0, delta, 0) * _maxRotationSpeed * Time.deltaTime;
             transform.rotation = Quaternion.Euler(newPivotRotation);
