@@ -45,7 +45,6 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\2022.3.24f1\Editor\Data\Tools\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\LegsAnimation.cs" />
     <Compile Include="Assets\Scripts\Duck.cs" />
     <Compile Include="Assets\Scripts\Duck\PhysicalMover.cs" />
     <Compile Include="Assets\Scripts\LegAnimation.cs" />
@@ -53,6 +52,7 @@
     <Compile Include="Assets\Scripts\MapEffects\Wind.cs" />
     <Compile Include="Assets\Scripts\Platform.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\Scripts\Duck\Parameters.cs" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2022.3.24f1\Editor\Data\Managed\UnityEngine\UnityEngine.dll</HintPath>
     </Reference>

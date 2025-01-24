@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97259679c877a3d4aaf4e47acf1bb8e1, type: 3}
+  m_Name: Default
+  m_EditorClassIdentifier: 
+  DistanceToFloor: 0.6
+  GroundLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  MaxSpeedMinRange: 3
+  MaxSpeedMaxRange: 7
+  MaxSpeedDistance: 10
+  AccelerationPower: 20
+  MaxAcceleration: 100
+  AccelerationFromDot:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 2
+      inSlope: -1.8410568
+      outSlope: -1.8410568
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.5093138
+      value: 1.0623243
+      inSlope: -0.338641
+      outSlope: -0.338641
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.1791941
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: -0.12701455
+      outSlope: -0.12701455
+      tangentMode: 34
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  StopRotationDegree: 25
+  MaxRotationSpeed: 120
+  SpringStrength: 2000
+  SpringDamper: 100
+  RotationSpringStrength: 100
+  RotationSpringDamper: 20

@@ -1,34 +1,28 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Duck
 {
     public class PhysicalMover : MonoBehaviour
     {
-        [SerializeField] private float _distanceToFloor;
-        [SerializeField] private LayerMask _groundLayers;
-        [SerializeField] private float _maxSpeedMinRange = 3f;
-        [SerializeField] private float _maxSpeedMaxRange = 7f;
-        [SerializeField] private float _maxSpeedDistance = 10f;
-        [Header("Spring")] [SerializeField] private float _springStrength;
-        [SerializeField] private float _springDamper;
-        [SerializeField] private float _rotationSpringStrength;
-        [SerializeField] private float _rotationSpringDamper;
-        [SerializeField] private Vector3 _targetRotation;
-        [SerializeField] private Vector3 _moveVector;
-        [Header("Move")] [SerializeField] private float _maxSpeed;
-        [SerializeField] private float _acceleration;
-        [SerializeField] private float _maxAcceleration;
-        [SerializeField] private AnimationCurve _accelerationFromDot;
-        [SerializeField] private int _stopRotationDegree = 25;
-        [SerializeField] private float _maxRotationSpeed = 120f;
-        private Rigidbody _rigidbody;
+        [SerializeField] private Rigidbody _rigidbody;
+        private Quaternion _targetRotation;
+        private Vector3 _moveVector;
+        private float _maxSpeed;
         private float _currentMaxSpeed = 0f;
         private Vector3 _goalVelocity;
         private float _speed = 0f;
         private float _rotationFraction = 0f;
+        private Parameters _parameters;
         
         private bool _isNeedToMove => Direction != Vector3.zero;
-        private bool _isNeedToRotate => _isNeedToMove || RotationDirection != Vector3.zero;
+        
+        public float MaxSpeed => _maxSpeed;
+        public bool IsOnGround
+        {
+            get; private set;
+        }
+        
         #region Direction
 
         private Vector3 _direction;
@@ -43,14 +37,11 @@ namespace Duck
                 _direction = value;
             }
         }
-
-        private Vector3 RotationDirection;
-
         #endregion
 
-        private void Awake()
+        public void Init(Duck duck)
         {
-            _rigidbody = GetComponent<Rigidbody>();
+            _parameters = duck.Parameters;
         }
 
         private void Update()
@@ -70,21 +61,23 @@ namespace Duck
                 _currentMaxSpeed = 0f;
 
             var delta = Vector3.Angle(transform.forward, Direction);
-            _currentMaxSpeed = delta < _stopRotationDegree ? _maxSpeed : Mathf.Lerp(_maxSpeed, 0, (delta - _stopRotationDegree) / 90);
+            _currentMaxSpeed = delta < _parameters.StopRotationDegree ? _maxSpeed : Mathf.Lerp(_maxSpeed, 0, (delta - _parameters.StopRotationDegree) / 90);
 
-            _speed = Mathf.MoveTowards(_speed, _currentMaxSpeed, _acceleration * Time.deltaTime);
+            _speed = Mathf.MoveTowards(_speed, _currentMaxSpeed, _parameters.AccelerationPower * Time.deltaTime);
         }
 
         public void SetMoveDirection(Vector3 directoion)
         {
-            _maxSpeed = Mathf.Lerp(_maxSpeedMinRange, _maxSpeedMaxRange, directoion.magnitude / _maxSpeedDistance);
+            _maxSpeed = Mathf.Lerp(_parameters.MaxSpeedMinRange, _parameters.MaxSpeedMaxRange, directoion.magnitude / _parameters.MaxSpeedDistance);
             Direction = directoion.normalized;
         }
 
         private void FixedUpdate()
         {
-            var isOnGround = IsOnGround(out var hit);
-            if (!isOnGround) return;
+            IsOnGround = CheckGround(out var hit);
+            
+            if (!IsOnGround) return;
+            
             Floating(hit);
             HorizontalMove();
             RotationStabilization();
@@ -95,13 +88,13 @@ namespace Duck
             var move = Direction;
 
             var velocityDot = Vector3.Dot(move, _rigidbody.velocity);
-            var acceleration = _acceleration * _accelerationFromDot.Evaluate(velocityDot);
+            var acceleration = _parameters.AccelerationPower * _parameters.AccelerationFromDot.Evaluate(velocityDot);
 
             var velocity = move * _maxSpeed;
             _goalVelocity = Vector3.MoveTowards(_goalVelocity, velocity, acceleration * Time.fixedDeltaTime);
 
             var neededAccel = (_goalVelocity - _rigidbody.velocity) / Time.fixedDeltaTime;
-            neededAccel = Vector3.ClampMagnitude(neededAccel, _maxAcceleration);
+            neededAccel = Vector3.ClampMagnitude(neededAccel, _parameters.MaxAcceleration);
             _rigidbody.AddForce(neededAccel * _rigidbody.mass);
         }
 
@@ -114,13 +107,13 @@ namespace Duck
             var hitbody = hit.rigidbody;
             if (hitbody)
                 otherVelocity = hitbody.velocity;
-
+            
             var rayDirVelocity = Vector3.Dot(rayDirection, velocity);
             var otherDirVelocity = Vector3.Dot(rayDirection, otherVelocity);
 
             var relVel = rayDirVelocity - otherDirVelocity;
-            var deltaX = hit.distance - _distanceToFloor;
-            var springForce = (deltaX * _springStrength) - (relVel * _springDamper);
+            var deltaX = hit.distance - _parameters.DistanceToFloor;
+            var springForce = (deltaX * _parameters.SpringStrength) - (relVel * _parameters.SpringDamper);
             _rigidbody.AddForce(rayDirection * springForce);
 
             if (hitbody)
@@ -129,34 +122,30 @@ namespace Duck
 
         private void RotationStabilization()
         {
-            var currentRotation = transform.rotation;
-            var targetRot = Quaternion.Euler(_targetRotation);
-            var toGoal = targetRot * Quaternion.Inverse(currentRotation);
+            var toGoal = _targetRotation * Quaternion.Inverse(transform.rotation);
 
             toGoal.ToAngleAxis(out var rotDegrees, out var rotAxis);
             rotAxis.Normalize();
 
+            if (rotDegrees > 180f)
+                rotDegrees -= 360f;
+            
             var rotRadians = rotDegrees * Mathf.Deg2Rad;
-
-            _rigidbody.AddTorque((rotAxis * (rotRadians * _rotationSpringStrength)) -
-                                 (_rigidbody.angularVelocity * _rotationSpringDamper));
+            
+            _rigidbody.AddTorque((rotAxis * (rotRadians * _parameters.RotationSpringStrength)) -
+                                 (_rigidbody.angularVelocity * _parameters.RotationSpringDamper));
         }
 
-        private bool IsOnGround(out RaycastHit hit)
+        private bool CheckGround(out RaycastHit hit)
         {
-            return Physics.Raycast(transform.position, -Vector3.up, out hit, _distanceToFloor * 2, _groundLayers);
+            return Physics.Raycast(transform.position, -Vector3.up, out hit, _parameters.DistanceToFloor * 2, _parameters.GroundLayers);
         }
         
         private void Rotate()
         {
-            var delta = Vector3.SignedAngle(transform.forward, Direction, Vector3.up);
-            _rotationFraction = Mathf.Abs(delta) / 180;
-            var newPivotRotation = _targetRotation + new Vector3(0, delta, 0) * (_maxRotationSpeed * Time.deltaTime);
-            if (newPivotRotation.y >= 180)
-                newPivotRotation.y -= 360;
-            else if (newPivotRotation.y < -180)
-                newPivotRotation.y += 360;
-            _targetRotation = newPivotRotation;
+            if (Direction == Vector3.zero) return;
+            
+            _targetRotation = Quaternion.LookRotation(Direction);
         }
     }
 }
