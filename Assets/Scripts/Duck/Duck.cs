@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using Player;
 
@@ -28,13 +25,13 @@ namespace Duck
         {
             var direction = position - transform.position;
             direction.y = 0;
+            if (direction.magnitude < 1.5f) return;
             _mover.SetMoveDirection(direction);
         }
 
         private void OnDisable()
         {
-            
+            _input.LeftButtonDown -= SetMovePosition;
         }
     }
 }
-

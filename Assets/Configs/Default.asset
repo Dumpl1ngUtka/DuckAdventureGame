@@ -19,7 +19,7 @@ MonoBehaviour:
   MaxSpeedMinRange: 3
   MaxSpeedMaxRange: 7
   MaxSpeedDistance: 10
-  AccelerationPower: 20
+  AccelerationPower: 5
   MaxAcceleration: 100
   AccelerationFromDot:
     serializedVersion: 2
@@ -54,9 +54,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  StopRotationDegree: 25
-  MaxRotationSpeed: 120
-  SpringStrength: 2000
+  StopRotationDegree: 30
+  RotationSpeed: 3
+  SpringStrength: 3000
   SpringDamper: 100
   RotationSpringStrength: 100
   RotationSpringDamper: 20

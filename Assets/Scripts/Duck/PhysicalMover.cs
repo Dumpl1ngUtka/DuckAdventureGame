@@ -51,7 +51,7 @@ namespace Duck
             else
                 Direction = Vector3.zero;
 
-            Rotate();
+            SetTargetRotation();
             SetSpeed();
         }
         
@@ -60,7 +60,7 @@ namespace Duck
             if (!_isNeedToMove)
                 _currentMaxSpeed = 0f;
 
-            var delta = Vector3.Angle(transform.forward, Direction);
+            var delta = Vector3.Angle(_rigidbody.transform.forward, Direction);
             _currentMaxSpeed = delta < _parameters.StopRotationDegree ? _maxSpeed : Mathf.Lerp(_maxSpeed, 0, (delta - _parameters.StopRotationDegree) / 90);
 
             _speed = Mathf.MoveTowards(_speed, _currentMaxSpeed, _parameters.AccelerationPower * Time.deltaTime);
@@ -90,7 +90,7 @@ namespace Duck
             var velocityDot = Vector3.Dot(move, _rigidbody.velocity);
             var acceleration = _parameters.AccelerationPower * _parameters.AccelerationFromDot.Evaluate(velocityDot);
 
-            var velocity = move * _maxSpeed;
+            var velocity = move * _speed;
             _goalVelocity = Vector3.MoveTowards(_goalVelocity, velocity, acceleration * Time.fixedDeltaTime);
 
             var neededAccel = (_goalVelocity - _rigidbody.velocity) / Time.fixedDeltaTime;
@@ -141,11 +141,10 @@ namespace Duck
             return Physics.Raycast(transform.position, -Vector3.up, out hit, _parameters.DistanceToFloor * 2, _parameters.GroundLayers);
         }
         
-        private void Rotate()
+        private void SetTargetRotation()
         {
             if (Direction == Vector3.zero) return;
-            
-            _targetRotation = Quaternion.LookRotation(Direction);
+            _targetRotation = Quaternion.Lerp(_targetRotation, Quaternion.LookRotation(Direction), Time.deltaTime * _parameters.RotationSpeed);
         }
     }
 }

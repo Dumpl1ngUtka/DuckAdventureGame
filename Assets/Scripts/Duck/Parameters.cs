@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Duck
 {
@@ -16,7 +17,7 @@ namespace Duck
         public float MaxAcceleration = 100f;
         public AnimationCurve AccelerationFromDot;
         public int StopRotationDegree = 25;
-        public float MaxRotationSpeed = 120f;
+        public float RotationSpeed = 120f;
         [Header("Spring")] 
         public float SpringStrength = 2000f;
         public float SpringDamper = 100f;

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Duck
 {
@@ -8,17 +9,19 @@ namespace Duck
     {
         [SerializeField] private PhysicalMover _mover;
         [SerializeField] private LegAnimation _secondLeg;
-        [SerializeField] private Transform _leg;
-        [SerializeField] private float _legSpacing;
-        [SerializeField] private float _maxHeight;
         [SerializeField] private Rigidbody _rigidbody;
+        [Header("Ray Cast Settings")]
+        [SerializeField] private float _maxLegOffsetDistance = 1f;
+        [SerializeField] private float _maxLegAdditionalSpacing = 1f;
+        [SerializeField] private float _rayStartHieght = 0.3f; 
+        [SerializeField] private float _legSpacing;
         [SerializeField] private LayerMask _layerMask;
+        [SerializeField] private float _maxHeight;
+        [Header("Animation")]
         [SerializeField] private float _stepHeight = 0.5f;
-        [SerializeField] private float _animationSpeedMultiplier = 1f;
         [SerializeField] private float _stepDistance = 1f;
+        [SerializeField] private float _animationSpeedMultiplier = 1f;
         [SerializeField] private AnimationCurve _stepVerticalPath;
-        private float _legOffset;
-        private float _additionLegSpacing;
         private Vector3 _previousLegPosition;
         private Vector3 _legPosition;
         private Vector3 _goatLegPosition;
@@ -27,72 +30,92 @@ namespace Duck
         private Quaternion _previousLegRotation;
         private Quaternion _legRotation;
         private Quaternion _goatLegRotation;
-        
-        public bool _isStepped = false;
-        public bool IsOnGround => _moveLerp >= 1f;
+
+        [HideInInspector] public bool IsStepped = false;
+        public bool IsLegOnGround => _moveLerp >= 1f;
 
         private void Awake()
         {
-            _legPosition = _leg.position;
-            _goatLegPosition = _leg.position;
+            _legPosition = transform.position;
+            _goatLegPosition = transform.position;
+
+            _legRotation = Quaternion.LookRotation(_rigidbody.transform.up, -_rigidbody.transform.forward);
+            _goatLegRotation = _legRotation;
         }
 
         private void Update()
         {
-            SetOffsetBySpeed();
             SetAnimationSpeed();
+            CalculateNewLegTransform(out _goatLegPosition, out _goatLegRotation);
 
             if (!_mover.IsOnGround)
             {
-                _goatLegPosition = _rigidbody.position + _rigidbody.transform.right * _legSpacing;
+                _legPosition = _rigidbody.position + _rigidbody.transform.right * _legSpacing;
+                _legRotation = Quaternion.LookRotation(_rigidbody.transform.up, -_rigidbody.transform.forward);
             }
-            else if (_secondLeg.IsOnGround && !_isStepped)
+            else if (_secondLeg.IsLegOnGround && !IsStepped)
             {
-                var ray = new Ray(
-                    _rigidbody.transform.position + _rigidbody.transform.right * (_legSpacing + _additionLegSpacing) +
-                    _rigidbody.transform.forward * _legOffset, Vector3.down);
-
-                if (Physics.Raycast(ray, out var hit, _maxHeight, _layerMask))
-                {
-                    _goatLegPosition = hit.point;
-                    _goatLegRotation = _rigidbody.rotation;
-                }
-                else
-                {
-                    _goatLegPosition = _rigidbody.position + _rigidbody.transform.right * _legSpacing;
-                    _goatLegRotation = _rigidbody.rotation;
-                }
-
-                if ((_goatLegPosition - _legPosition).magnitude > _stepDistance)
-                {
-                    _previousLegPosition = _legPosition;
-                    _previousLegRotation = _legRotation;
-                    _moveLerp = 0f;
-                }
+                var bodyHorizontalPos = _rigidbody.position;
+                //bodyHorizontalPos.y = _legPosition.y;
+                var isDisanceEnough = (bodyHorizontalPos - _legPosition).magnitude > _stepDistance;
+                if (isDisanceEnough && IsLegOnGround)
+                    SetParametersForAnimation();
+                
+                if (transform.position.y > _rigidbody.position.y)
+                    SetParametersForAnimation();
             }
 
-            if (_moveLerp < 1f)
+            if (!IsLegOnGround && _mover.IsOnGround)
             {
-                _isStepped = true;
-                _secondLeg._isStepped = false;
+
                 _legPosition = LerpStep(_previousLegPosition, _goatLegPosition, _moveLerp);
+                _legRotation = Quaternion.Lerp(_previousLegRotation, _goatLegRotation, _moveLerp);
                 _moveLerp += Time.deltaTime * _animationSpeed;
             }
 
-            _leg.position = _legPosition;
+            transform.position = _legPosition;
+            transform.rotation = _legRotation;
         }
 
-        private void SetOffsetBySpeed()
+        private void SetParametersForAnimation()
         {
-            var dot = Vector3.Dot(_rigidbody.velocity, _rigidbody.transform.forward);
-            //var magnitude = _rigidbody.velocity.magnitude;
-            _legOffset = dot / _mover.MaxSpeed;
-
-            var dot2 = Vector3.Dot(_rigidbody.velocity, _rigidbody.transform.right);
-            //var magnitude2 = _rigidbody.velocity.magnitude;
-            _additionLegSpacing = dot2 / _mover.MaxSpeed;
+            _previousLegPosition = _legPosition;
+            _previousLegRotation = _legRotation;
+            _moveLerp = 0f;
+            IsStepped = true;
+            _secondLeg.IsStepped = false;
+        }
+        
+        private void CalculateNewLegTransform(out Vector3 newLegPosition, out Quaternion newLegRotation)
+        {
+            var rbTransform = _rigidbody.transform;
+            var origin = rbTransform.position + rbTransform.right * (_legSpacing + GetAdditionSpacingBySpeed()) +
+                         rbTransform.forward *  GetOffsetBySpeed() + rbTransform.up * _rayStartHieght;
+            
+            if (Physics.Raycast(origin, -rbTransform.up, out var hit, _maxHeight, _layerMask))
+            {
+                newLegPosition = hit.point;
+                newLegRotation = Quaternion.LookRotation(hit.normal, -rbTransform.forward);
+            }
+            else
+            {
+                newLegPosition = rbTransform.position + rbTransform.right * _legSpacing;
+                newLegRotation = Quaternion.LookRotation(_rigidbody.transform.up, -rbTransform.forward);
+            }
         }
 
+        private float GetOffsetBySpeed()
+        {
+            var dotForward = Vector3.Dot(_rigidbody.velocity, _rigidbody.transform.forward);
+            return _mover.MaxSpeed == 0? 0 : dotForward / _mover.MaxSpeed * _maxLegOffsetDistance;
+        }
+
+        private float GetAdditionSpacingBySpeed()
+        {
+            var dotRight = Vector3.Dot(_rigidbody.velocity, _rigidbody.transform.right);
+            return _mover.MaxSpeed == 0? 0 : dotRight / _mover.MaxSpeed * _maxLegAdditionalSpacing;
+        }
+        
         private Vector3 LerpStep(Vector3 oldPos, Vector3 newPos, float lerp)
         {
             lerp = Mathf.Clamp01(lerp);
